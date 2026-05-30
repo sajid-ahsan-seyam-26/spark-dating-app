@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spark - Date & Match</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <div class="app-container">
+        <header>
+            <h1>⚡ Spark</h1>
+        </header>
+
+        <div id="card-container">
+            <div id="profile-card" class="card">
+                <img id="profile-img" src="" alt="Profile Picture">
+                <div class="profile-info">
+                    <h2><span id="profile-name"></span>, <span id="profile-age"></span></h2>
+                    <p id="profile-bio"></p>
+                </div>
+            </div>
+            
+            <div id="no-profiles" class="hidden">
+                <h3>No more profiles around you! 😔</h3>
+                <p>Check back later for new matches.</p>
+            </div>
+        </div>
+
+        <div class="actions" id="action-buttons">
+            <button class="btn dislike" onclick="handleSwipe('dislike')">❌</button>
+            <button class="btn like" onclick="handleSwipe('like')">💚</button>
+        </div>
+
+        <div class="matches-section">
+            <h4>Your Matches 🎉</h4>
+            <div id="matches-row" class="matches-row">
+                <p class="no-matches-text" id="empty-matches-msg">No matches yet. Keep swiping!</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let profiles = [];
+        let currentIndex = 0;
+
+        // 1. Initial Load: Fetch profiles from Flask API when application boots up
+        async function loadProfiles() {
+            try {
+                const response = await fetch('/api/profiles');
+                profiles = await response.json();
+                displayProfile();
+                updateMatchesList(); // Load existing session matches if any
+            } catch (error) {
+                console.error("Error fetching profiles:", error);
+            }
+        }
+
+        // 2. Visual Controller: Display current active profile card data
+        function displayProfile() {
+            if (currentIndex < profiles.length) {
+                const currentProfile = profiles[currentIndex];
+                document.getElementById('profile-img').src = currentProfile.image;
+                document.getElementById('profile-name').innerText = currentProfile.name;
+                document.getElementById('profile-age').innerText = currentProfile.age;
+                document.getElementById('profile-bio').innerText = currentProfile.bio;
+                
+                // Keep cards visible
+                document.getElementById('profile-card').style.display = 'block';
+                document.getElementById('action-buttons').style.removeAttribute; 
+            } else {
+                // Out of profiles to display
+                document.getElementById('profile-card').style.display = 'none';
+                document.getElementById('action-buttons').style.display = 'none';
+                document.getElementById('no-profiles').classList.remove('hidden');
+            }
+        }
+
+        // 3. Action Handler: Processes the user's input swipe (Like/Dislike)
+        async function handleSwipe(action) {
+            if (currentIndex >= profiles.length) return;
+
+            const currentProfile = profiles[currentIndex];
+
+            try {
+                // Send interactions directly to backend database simulation
+                const response = await fetch('/api/swipe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: currentProfile.id, action: action })
+                });
+
+                const result = await response.json();
+
+                // If backend returns match status: True
+                if (result.is_match) {
+                    alert(`🎉 Match Found! You and ${result.matched_with.name} liked each other!`);
+                    updateMatchesList(); // Refresh the list at bottom immediately
+                }
+            } catch (error) {
+                console.error("Error processing swipe:", error);
+            }
+
+            // Move pointer position index forward to fetch next person card
+            currentIndex++;
+            displayProfile();
+        }
+
+        // 4. Matches Section Updater: Refreshes UI with matched item lists
+        async function updateMatchesList() {
+            try {
+                const response = await fetch('/api/matches');
+                const matches = await response.json();
+                const matchesRow = document.getElementById('matches-row');
+                const emptyMsg = document.getElementById('empty-matches-msg');
+
+                if (matches.length > 0) {
+                    if (emptyMsg) emptyMsg.remove(); // Remove initial text placeholder
+                    
+                    matchesRow.innerHTML = ''; // Reset UI container row
+                    
+                    matches.forEach(match => {
+                        // Create individual match bubble element
+                        const matchDiv = document.createElement('div');
+                        matchDiv.classList.add('match-bubble');
+                        
+                        matchDiv.innerHTML = `
+                            <img src="${match.image}" alt="${match.name}">
+                            <span>${match.name}</span>
+                        `;
+                        matchesRow.appendChild(matchDiv);
+                    });
+                }
+            } catch (error) {
+                console.error("Error updates matches section view:", error);
+            }
+        }
+
+        // Launch Application
+        loadProfiles();
+    </script>
+</body>
+</html>
