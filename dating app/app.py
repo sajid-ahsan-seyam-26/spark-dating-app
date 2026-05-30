@@ -3,7 +3,7 @@ from flask import Flask, render_template, jsonify, request
 
 app = Flask(__name__)
 
-# Expanded profiles data
+
 PROFILES = [
     {
         "id": 1,
@@ -49,7 +49,7 @@ PROFILES = [
     }
 ]
 
-# Simple in-memory list to store actual matches during the session
+
 MATCHES = []
 
 @app.route('/')
@@ -60,21 +60,21 @@ def home():
 def get_profiles():
     return jsonify(PROFILES)
 
-# New Feature: Handle swipe logic and check for a match
+
 @app.route('/api/swipe', methods=['POST'])
 def swipe():
     data = request.json
     profile_id = data.get('id')
-    action = data.get('action') # 'like' or 'dislike'
+    action = data.get('action') 
     
     is_match = False
     matched_profile = None
     
     if action == 'like':
-        # Simulating a 50% chance that they liked you back!
+        
         is_match = random.choice([True, False])
         if is_match:
-            # Find the profile details to save into matches
+            
             for profile in PROFILES:
                 if profile['id'] == profile_id:
                     matched_profile = profile
@@ -88,7 +88,7 @@ def swipe():
         "matched_with": matched_profile
     })
 
-# New Feature: API to fetch all successfully matched people
+
 @app.route('/api/matches')
 def get_matches():
     return jsonify(MATCHES)
